@@ -1,0 +1,45 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: hdb-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: hdb_resale
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hdb-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/hdb_resale
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    command:
+      [
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--reload",
+      ]
+
+volumes:
+  pgdata:
