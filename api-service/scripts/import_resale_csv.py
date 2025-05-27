@@ -6,8 +6,9 @@ from datetime import datetime
 from sqlalchemy import create_engine
 
 
-CSV_PATH = pathlib.Path("../ResaleFlatPrices/")
-DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/hdb_resale"
+CSV_PATH = pathlib.Path("/data/csvs")
+print(os.listdir(CSV_PATH))
+DATABASE_URL = "postgresql://postgres:postgres@postgres:5432/hdb_resale"
 
 expected_cols = [
     "month", "town", "flat_type", "block", "street_name",
