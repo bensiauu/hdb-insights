@@ -29,9 +29,11 @@ async def lifespan(app:FastAPI):
         logger.info("Loaded model from saved_model")
     except Exception as e:
         logger.error(f"Failed to load model: {e}")
-        logger.info("saved model not found, training model")
-        train_and_save(csv_path="../api-service/ResaleFlatPrices/")
-        model = load_model()
+        # logger.info("saved model not found, training model")
+        # train_and_save(csv_path="/data/csvs")
+        # model = load_model()
+        model = None
+        raise RuntimeError("failed to load model")
     yield
 
 

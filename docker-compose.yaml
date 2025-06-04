@@ -1,17 +1,17 @@
 services:
-  api:
+  data-service:
     build:
-      context: ./api-service/
+      context: ./backend/data-service/
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "8001:8001"
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/hdb_resale?sslmode=disable
     depends_on:
       db:
         condition: service_healthy
     volumes:
-      - ./api-service/:/app:rw
+      - ./backend/data-service/:/app:rw
   db:
     image: postgres:15
     environment:
@@ -28,16 +28,22 @@ services:
       timeout: 5s
       retries: 5
 
-  import-csv:
+  # import-csv:
+  #   build:
+  #     context: ./backend/data-service
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #   environment:
+  #     - DATABASE_URL=postgresql://postgres:postgres@db:5432/hdb_resale?sslmode=disable
+  #   volumes:
+  #     - ./data/ResaleFlatPrices:/data/csvs:ro
+  #   command: ["python", "scripts/import_resale_csv.py"]
+  model-service:
     build:
-      context: ./api-service
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/hdb_resale?sslmode=disable
-    volumes:
-      - ./api-service/ResaleFlatPrices:/data/csvs:ro
-    command: ["python", "scripts/import_resale_csv.py"]
+      context: ./backend/model-service/
+    ports:
+      - "8000:8000"
+
 volumes:
   pgdata:
