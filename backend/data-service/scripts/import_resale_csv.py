@@ -1,10 +1,8 @@
-import pathlib
-import pandas as pd
 import os
-from datetime import datetime
+import pathlib
 
+import pandas as pd
 from sqlalchemy import create_engine
-
 
 CSV_PATH = pathlib.Path("/data/csvs")
 print(os.listdir(CSV_PATH))
