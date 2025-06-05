@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 import pandas as pd
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from model_utils import load_model, preprocess_data, train_and_save
@@ -38,6 +39,8 @@ async def lifespan(app:FastAPI):
 
 
 app = FastAPI(title="HDB Resale Price Predictor", lifespan=lifespan)
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"],
+                   allow_headers=["*"])
 
 
 @app.post("/predict")
