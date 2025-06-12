@@ -5,7 +5,6 @@ import pandas as pd
 from sqlalchemy import create_engine
 
 CSV_PATH = pathlib.Path("/data/csvs")
-print(os.listdir(CSV_PATH))
 DATABASE_URL = "postgresql://postgres:postgres@db:5432/hdb_resale"
 
 expected_cols = [

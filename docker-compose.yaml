@@ -11,7 +11,7 @@ services:
       db:
         condition: service_healthy
     volumes:
-      - ./backend/data-service/:/app:rw
+      - ./backend/data-service/:/app:rw,z
   db:
     image: postgres:15
     environment:
@@ -37,7 +37,7 @@ services:
   #   environment:
   #     - DATABASE_URL=postgresql://postgres:postgres@db:5432/hdb_resale?sslmode=disable
   #   volumes:
-  #     - ./data/ResaleFlatPrices:/data/csvs:ro
+  #     - ./data/ResaleFlatPrices:/data/csvs:ro,z
   #   command: ["python", "scripts/import_resale_csv.py"]
   model-service:
     build:
@@ -51,7 +51,7 @@ services:
     ports:
       - "5173:5173"
     volumes:
-      - ./frontend:/app:rw
+      - ./frontend:/app:rw,z
     depends_on:
       - data-service
       - model-service
