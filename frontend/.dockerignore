@@ -1,0 +1,9 @@
+node_modules
+.vite
+*.log
+.env
+.DS_Store
+.git
+.vscode
+# Build output
+/dist
