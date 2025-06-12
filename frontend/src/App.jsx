@@ -16,9 +16,14 @@ export default function App() {
 
   // ── History State ──
   const [historyTown, setHistoryTown] = useState("");
-  const [historyData, setHistoryData] = useState(null);
+  const [historyFlatType, setHistoryFlatType] = useState("");
+  const [historyData, setHistoryData] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [historyError, setHistoryError] = useState("");
+
+  // -- History Pagination --
+  const [currentPage, setCurrentPage] = useState(1);
+  const limit = 10;
 
   // ── Handlers for Predict Form ──
   const handlePredictChange = (e) => {
@@ -63,23 +68,34 @@ export default function App() {
     setHistoryTown(e.target.value);
   };
 
-  const submitHistory = async (e) => {
-    e.preventDefault();
+  const handleHistoryFlatTypeChange = (e) => {
+    setHistoryFlatType(e.target.value);
+  };
+
+  const fetchHistory = async (page = 1) => {
     setHistoryError("");
-    setHistoryData(null);
+    setHistoryData([]);
     setLoadingHistory(true);
 
     try {
-      const encodedTown = encodeURIComponent(historyTown.toUpperCase());
-      const response = await fetch(
-        `http://localhost:8001/history/${encodedTown}`,
+      const offset = (page - 1) * limit;
+      const params = new URLSearchParams({
+        town: historyTown.toUpperCase(),
+        flat_type: historyFlatType.toUpperCase(),
+        limit: String(limit),
+        offset: String(offset),
+      });
+
+      const res = await fetch(
+        `http://localhost:8001/api/history?${params.toString()}`,
       );
-      if (!response.ok) {
-        const err = await response.text();
-        throw new Error(err || "Fetch history failed");
+      if (!res.ok) {
+        throw new Error((await res.text()) || "Fetch History Failed");
       }
-      const data = await response.json();
-      setHistoryData(data.history);
+
+      const data = await res.json();
+      setHistoryData(data);
+      setCurrentPage(page);
     } catch (err) {
       setHistoryError(err.message);
     } finally {
@@ -87,6 +103,12 @@ export default function App() {
     }
   };
 
+  const submitHistory = async (e) => {
+    e.preventDefault();
+    fetchHistory(1);
+  };
+
+  const offset = (currentPage - 1) * limit;
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900 max-w-3xl mx-auto p-6 space-y-12">
       <h1 className="text-4xl font-bold text-center">HDB Resale Insights</h1>
@@ -216,6 +238,15 @@ export default function App() {
             required
             placeholder="Enter Town (e.g. ANG MO KIO)"
           />
+          <input
+            className="flex-grow bg-white border border-gray-300 rounded px-3 py-2 text-gray-900 placeholder-gray-500
+               focus:outline-none focus:ring-2 focus:ring-green-500"
+            type="text"
+            value={historyFlatType}
+            onChange={handleHistoryFlatTypeChange}
+            required
+            placeholder="Enter Flat Type (e.g. 3 ROOM)"
+          />
           <button
             type="submit"
             disabled={loadingHistory}
@@ -241,25 +272,58 @@ export default function App() {
             <table className="min-w-full table-auto border-collapse">
               <thead>
                 <tr className="bg-gray-200">
-                  <th className="px-4 py-2 text-left text-gray-900">Year</th>
+                  <th className="px-4 py-2 text-left text-gray-900"></th>
                   <th className="px-4 py-2 text-left text-gray-900">
-                    Avg Price
+                    Flat Type
+                  </th>
+                  <th className="px-4 py-2 text-left text-gray-900">Town</th>
+                  <th className="px-4 py-2 text-left text-gray-900">
+                    Lease Commencement
+                  </th>
+                  <th className="px-4 py-2 text-left text-gray-900">
+                    Floor Area (sqm)
+                  </th>
+                  <th className="px-4 py-2 text-left text-gray-900">
+                    Resale Price
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {historyData.map((row) => (
-                  <tr key={row.year} className="hover:bg-gray-100">
-                    <td className="border-t border-gray-300 px-4 py-2">
-                      {row.year}
+                {historyData.map((row, idx) => (
+                  <tr key={offset + idx} className="hover:bg-gray-100">
+                    <td className="border px-2 py-1">
+                      {(currentPage - 1) * limit + idx + 1}
                     </td>
-                    <td className="border-t border-gray-300 px-4 py-2">
-                      ${row.avg_price.toLocaleString()}
+                    <td className="border px-2 py-1">{row.flat_type}</td>
+                    <td className="border px-2 py-1">{row.town}</td>
+                    <td className="border px-2 py-1">
+                      {row.lease_commence_date}
+                    </td>
+                    <td className="border px-2 py-1">{row.floor_area_sqm}</td>
+                    <td className="border px-2 py-1">
+                      ${row.resale_price.toLocaleString()}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            <div className="flex justify-center space-x-2">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => fetchHistory(currentPage - 1)}
+                className="px-3 py-1 bg-gray-300 rounded disabled:opacity-50"
+              >
+                Prev
+              </button>
+              <span className="px-3 py-1">Page {currentPage}</span>
+              <button
+                disabled={historyData.length < limit}
+                onClick={() => fetchHistory(currentPage + 1)}
+                className="px-3 py-1 bg-gray-300 rounded disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
       </section>

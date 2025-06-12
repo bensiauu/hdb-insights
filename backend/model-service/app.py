@@ -20,10 +20,8 @@ class ResaleInput(BaseModel):
     flat_type: str = Field(..., examples=["3 ROOM"])
 
 
-
-
 @asynccontextmanager
-async def lifespan(app:FastAPI):
+async def lifespan(app: FastAPI):
     global model
     try:
         model = load_model()
@@ -34,18 +32,20 @@ async def lifespan(app:FastAPI):
         # train_and_save(csv_path="/data/csvs")
         # model = load_model()
         model = None
-        raise RuntimeError("failed to load model")
     yield
 
 
 app = FastAPI(title="HDB Resale Price Predictor", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"],
-                   allow_headers=["*"])
+app.add_middleware(
+    CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
+)
 
 
 @app.post("/predict")
 async def predict_price(payload: ResaleInput):
     try:
+        if model is None:
+            raise HTTPException(status_code=500, detail="no model found")
         df = pd.DataFrame([payload])
         df_features = preprocess_data(df)
         preds = model.predict(df_features)

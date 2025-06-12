@@ -14,7 +14,10 @@ router = APIRouter()
 def get_resale_data(
     db: Session = Depends(get_db),
     flat_type: Optional[str] = Query(None),
+    town: Optional[str] = Query(None),
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ):
-    return get_all_resale_records(db, limit=limit, offset=offset, flat_type=flat_type)
+    return get_all_resale_records(
+        db, limit=limit, offset=offset, flat_type=flat_type, town=town
+    )
