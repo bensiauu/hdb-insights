@@ -1,6 +1,7 @@
 from typing import List, Optional
 from fastapi import Depends
 from sqlalchemy.orm import Session
+from sqlalchemy import distinct
 
 from app.db.database import get_db
 from app.models.models import ResaleRecord
@@ -25,3 +26,24 @@ def get_all_resale_records(
         .limit(limit)
         .all()
     )
+
+
+def get_all_towns(db: Session = Depends(get_db)):
+    """
+    Returns distinct towns in DB
+    """
+
+    results = db.query(distinct(ResaleRecord.town)).order_by(ResaleRecord.town).all()
+    return [row[0] for row in results]
+
+
+def get_all_flat_types(db: Session = Depends(get_db)):
+    """
+    Returns distinct flat types in DB
+    """
+    results = (
+        db.query(distinct(ResaleRecord.flat_type))
+        .order_by(ResaleRecord.flat_type)
+        .all()
+    )
+    return [row[0] for row in results]
