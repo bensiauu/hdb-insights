@@ -1,154 +1,217 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { MdAttachMoney, MdExpandMore, MdExpandLess } from "react-icons/md";
 
-export default function PredictPrice() {
+export default function PricePrediction() {
+  /* ───────────── state ───────────── */
+  const [town, setTown] = useState("");
+  const [flatType, setFlatType] = useState("");
+  const [storeyRange, setStoreyRange] = useState("");
+  const [leaseYear, setLeaseYear] = useState("");
 
-  const [predictInput, setPredictInput] = useState({
-    town: "",
-    flat_model: "",
-    floor_area_sqm: "",
-    storey_range: "",
-    remaining_lease: "",
-    flat_type: "",
-  });
-  const [predictedPrice, setPredictedPrice] = useState(null);
-  const [loadingPredict, setLoadingPredict] = useState(false);
-  const [predictError, setPredictError] = useState("");
+  // optional fields
+  const [month, setMonth] = useState("");
+  const [floorArea, setFloorArea] = useState("");
+  const [flatModel, setFlatModel] = useState("");
+  const [block, setBlock] = useState("");
+  const [streetName, setStreetName] = useState("");
 
-  const handlePredictChange = (e) => {
-    const { name, value } = e.target;
-    setPredictInput((prev) => ({ ...prev, [name]: value }));
-  };
+  // ui helpers
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [townOptions, setTownOptions] = useState([]);
+  const [flatTypeOptions, setFlatTypeOptions] = useState([]);
+  const [storeyOptions, setStoreyOptions] = useState([]);
+  const [predicted, setPredicted] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const submitPredict = async (e) => {
+  useEffect(() => {
+    Promise.all([
+      fetch("http://localhost:8001/api/options/town").then((r) => r.json()),
+      fetch("http://localhost:8001/api/options/flat_type").then((r) =>
+        r.json(),
+      ),
+      fetch("http://localhost:8001/api/options/storey_range").then((r) =>
+        r.json(),
+      ),
+    ])
+      .then(([towns, types, storey]) => {
+        setTownOptions(towns);
+        setFlatTypeOptions(types);
+        setStoreyOptions(storey);
+      })
+      .catch(() => console.error("Failed to fetch select options"));
+  }, []);
+
+  const handlePredict = async (e) => {
     e.preventDefault();
-    setPredictError("");
-    setPredictedPrice(null);
-    setLoadingPredict(true);
+    setError("");
+    setPredicted(null);
+    setLoading(true);
+
+    const body = {
+      town: town.toUpperCase(),
+      flat_type: flatType.toUpperCase(),
+      storey_range: storeyRange,
+      lease_commence_date: Number(leaseYear),
+    };
+    if (month) body.month = month;
+    if (floorArea) body.floor_area_sqm = Number(floorArea);
+    if (flatModel) body.flat_model = flatModel;
+    if (block) body.block = block;
+    if (streetName) body.street_name = streetName;
 
     try {
-      const response = await fetch("http://localhost:8000/predict", {
+      const res = await fetch("http://localhost:8000/predict", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          town: predictInput.town,
-          flat_model: predictInput.flat_model,
-          floor_area_sqm: predictInput.floor_area_sqm,
-          storey_range: predictInput.storey_range,
-          remaining_lease: predictInput.remaining_lease,
-          flat_type: predictInput.flat_type,
-        }),
+        body: JSON.stringify(body),
       });
-      if (!response.ok) {
-        const err = await response.text();
-        throw new Error(err || "Prediction Failed");
-      }
-      const data = await response.json();
-      setPredictedPrice(data.predicted_price);
+      if (!res.ok) throw new Error(await res.text());
+      const { prediction } = await res.json();
+      setPredicted(prediction);
     } catch (err) {
-      setPredictError(err.message);
+      setError(err.message || "Prediction failed");
     } finally {
-      setLoadingPredict(false);
+      setLoading(false);
     }
   };
-    return (
-      <section className="bg-white shadow-md rounded-lg p-6">
-        <h2 className="text-2xl font-semibold mb-4">Predict Resale Price</h2>
-        <form
-          onSubmit={submitPredict}
-          className="grid grid-cols-1 md:grid-cols-3 gap-4"
+
+  return (
+    <section className="bg-white shadow-md rounded-lg p-6">
+      <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+        <MdAttachMoney /> Predict Resale Price
+      </h2>
+
+      <form onSubmit={handlePredict} className="flex flex-col gap-4">
+        {/* required fields */}
+        <div className="flex flex-col md:flex-row gap-4">
+          <select
+            value={town}
+            onChange={(e) => setTown(e.target.value)}
+            required
+            className="flex-1 bg-white border border-gray-300 rounded px-3 py-2"
+          >
+            <option value="">Select Town</option>
+            {townOptions.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={flatType}
+            onChange={(e) => setFlatType(e.target.value)}
+            required
+            className="flex-1 bg-white border border-gray-300 rounded px-3 py-2"
+          >
+            <option value="">Flat Type</option>
+            {flatTypeOptions.map((f) => (
+              <option key={f} value={f}>
+                {f}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={storeyRange}
+            onChange={(e) => setStoreyRange(e.target.value)}
+            required
+            className="flex-1 bg-white border border-gray-300 rounded px-3 py-2"
+          >
+            <option value="">Storey Range</option>
+            {storeyOptions.map((f) => (
+              <option key={f} value={f}>
+                {f}
+              </option>
+            ))}
+          </select>
+
+          <input
+            type="number"
+            min={1966}
+            max={new Date().getFullYear()}
+            placeholder="Lease Yr"
+            value={leaseYear}
+            onChange={(e) => setLeaseYear(e.target.value)}
+            required
+            className="flex-1 bg-white border border-gray-300 rounded px-3 py-2"
+          />
+        </div>
+
+        {/* advanced toggle */}
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="flex items-center gap-1 text-green-700 hover:underline self-start"
         >
-          {[
-            {
-              label: "Town",
-              name: "town",
-              type: "text",
-              placeholder: "ANG MO KIO",
-            },
-            {
-              label: "Flat Model",
-              name: "flat_model",
-              type: "text",
-              placeholder: "Improved",
-            },
-            {
-              label: "Floor Area (sqm)",
-              name: "floor_area_sqm",
-              type: "number",
-              placeholder: "75",
-            },
-            {
-              label: "Storey Range",
-              name: "storey_range",
-              type: "text",
-              placeholder: "01 TO 03",
-            },
-            {
-              label: "Remaining Lease (yrs)",
-              name: "remaining_lease",
-              type: "number",
-              placeholder: "75",
-            },
-            {
-              label: "Flat Type",
-              name: "flat_type",
-              type: "text",
-              placeholder: "3 ROOM",
-            },
-          ].map(({ label, name, type, placeholder }) => (
-            <div key={name} className="flex flex-col">
-              <label className="font-medium mb-1">{label}</label>
-              <input
-                className="
-                   bg-white
-                   border border-gray-300
-                   rounded
-                   px-3 py-2
-                   text-gray-900
-                   placeholder-gray-500
-                   focus:outline-none focus:ring-2 focus:ring-blue-400
-                 "
-                type={type}
-                name={name}
-                value={predictInput[name]}
-                onChange={handlePredictChange}
-                required
-                placeholder={placeholder}
-                step={type === "number" ? "0.1" : undefined}
-              />
-            </div>
-          ))}
+          {showAdvanced ? <MdExpandLess /> : <MdExpandMore />}
+          {showAdvanced ? "Hide" : "Show"} advanced options
+        </button>
 
-          <div className="col-span-1 md:col-span-3 flex justify-end">
-            <button
-              type="submit"
-              disabled={loadingPredict}
-              className="
-                 mt-2
-                 bg-blue-600
-                 text-white
-                 px-6 py-2
-                 rounded
-                 hover:bg-blue-700
-                 disabled:opacity-50
-                 disabled:cursor-not-allowed
-               "
-            >
-              {loadingPredict ? "Predicting…" : "Predict Price"}
-            </button>
+        {showAdvanced && (
+          <div className="grid md:grid-cols-2 gap-4">
+            <input
+              type="text"
+              placeholder="YYYY-MM"
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              className="bg-white border border-gray-300 rounded px-3 py-2"
+            />
+            <input
+              type="number"
+              placeholder="Floor Area (sqm)"
+              value={floorArea}
+              onChange={(e) => setFloorArea(e.target.value)}
+              className="bg-white border border-gray-300 rounded px-3 py-2"
+            />
+            <input
+              type="text"
+              placeholder="Flat Model"
+              value={flatModel}
+              onChange={(e) => setFlatModel(e.target.value)}
+              className="bg-white border border-gray-300 rounded px-3 py-2"
+            />
+            <input
+              type="text"
+              placeholder="Block"
+              value={block}
+              onChange={(e) => setBlock(e.target.value)}
+              className="bg-white border border-gray-300 rounded px-3 py-2"
+            />
+            <input
+              type="text"
+              placeholder="Street Name"
+              value={streetName}
+              onChange={(e) => setStreetName(e.target.value)}
+              className="bg-white border border-gray-300 rounded px-3 py-2 md:col-span-2"
+            />
           </div>
-        </form>
+        )}
 
-        {predictError && (
-          <p className="mt-4 text-red-600 font-medium">Error: {predictError}</p>
-        )}
-        {predictedPrice !== null && (
-          <p className="mt-4 text-lg">
-            Estimated Price:{" "}
-            <span className="font-bold text-blue-700">
-              ${predictedPrice.toLocaleString()}
-            </span>
+        <button
+          type="submit"
+          disabled={loading}
+          className="mt-2 bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? "Predicting…" : "Predict"}
+        </button>
+      </form>
+
+      {error && <p className="mt-4 text-red-600 font-medium">Error: {error}</p>}
+
+      {predicted !== null && !error && (
+        <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded text-center">
+          <p className="text-xl font-semibold text-green-700">
+            {predicted.toLocaleString("en-SG", {
+              style: "currency",
+              currency: "SGD",
+              maximumFractionDigits: 0,
+            })}
           </p>
-        )}
-      </section>
-    );
+          <p className="text-sm text-gray-600">Estimated resale price</p>
+        </div>
+      )}
+    </section>
+  );
 }

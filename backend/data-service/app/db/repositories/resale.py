@@ -47,3 +47,13 @@ def get_all_flat_types(db: Session = Depends(get_db)):
         .all()
     )
     return [row[0] for row in results]
+
+
+def get_all_storey(db: Session = Depends(get_db)):
+    results = (
+        db.query(distinct(ResaleRecord.storey_range))
+        .order_by(ResaleRecord.storey_range)
+        .all()
+    )
+
+    return [row[0] for row in results]

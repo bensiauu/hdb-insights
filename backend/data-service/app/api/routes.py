@@ -7,6 +7,7 @@ from app.db.repositories.resale import (
     get_all_resale_records,
     get_all_towns,
     get_all_flat_types,
+    get_all_storey,
 )
 from app.schemas.schemas import ResaleRecordResponse
 
@@ -36,3 +37,8 @@ def get_available_towns(db: Session = Depends(get_db)):
 @opts_router.get("/flat_type", response_model=List[str])
 def get_available_flat_types(db: Session = Depends(get_db)):
     return get_all_flat_types(db)
+
+
+@opts_router.get("/storey_range", response_model=List[str])
+def get_available_storey(db: Session = Depends(get_db)):
+    return get_all_storey(db)
