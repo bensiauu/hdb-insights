@@ -7,6 +7,8 @@ console.log("CSS should be loading");
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <App />
+    <div className="bg-gradient-to-tr from-blue-50 via-white to-green-100 font-inter text-gray-900 min-h-screen">
+      <App />
+    </div>
   </StrictMode>,
 );
