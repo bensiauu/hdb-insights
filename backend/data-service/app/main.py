@@ -5,8 +5,9 @@ from app.api.router import router
 from app.db.database import Base, engine
 
 app = FastAPI(title="HDB insights", debug=True)
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"],
-                   allow_headers=["*"])
+app.add_middleware(
+    CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
+)
 
 
 Base.metadata.create_all(bind=engine)
